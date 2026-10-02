@@ -23,6 +23,7 @@ pack:
 	mkdir -p dist
 	gnome-extensions pack --force \
 		--extra-source=icons \
+		--extra-source=screenshots \
 		--extra-source=README.md \
 		--extra-source=LICENSE \
 		-o dist .
