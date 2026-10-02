@@ -283,6 +283,46 @@ class UsageRow extends PopupMenu.PopupBaseMenuItem {
 });
 
 // ---------------------------------------------------------------------------
+// Menu footer: "Updated 20:20" with a refresh button on the right.
+// ---------------------------------------------------------------------------
+
+const Footer = GObject.registerClass(
+class Footer extends PopupMenu.PopupBaseMenuItem {
+    _init(onRefresh) {
+        super._init({reactive: false, can_focus: false});
+
+        const box = new St.BoxLayout({
+            x_expand: true,
+            style_class: 'claude-usage-footer',
+        });
+        this.add_child(box);
+
+        this._label = new St.Label({
+            text: 'Updated —',
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+            style_class: 'claude-usage-status',
+        });
+        box.add_child(this._label);
+
+        this._button = new St.Button({
+            style_class: 'claude-usage-refresh',
+            can_focus: true,
+            child: new St.Icon({
+                icon_name: 'view-refresh-symbolic',
+                icon_size: 16,
+            }),
+        });
+        this._button.connect('clicked', onRefresh);
+        box.add_child(this._button);
+    }
+
+    setUpdated(date) {
+        this._label.text = date ? `Updated ${formatClock(date)}` : 'Updated —';
+    }
+});
+
+// ---------------------------------------------------------------------------
 // Extension
 // ---------------------------------------------------------------------------
 
@@ -292,8 +332,6 @@ export default class ClaudeCodeUsageExtension extends Extension {
         this._refreshing = false;
         this._state = 'loading';
         this._data = null;
-        this._error = null;
-        this._errorKind = null;
         this._plan = null;
         this._lastUpdated = null;
         this._lastAttempt = 0;
@@ -385,16 +423,8 @@ export default class ClaudeCodeUsageExtension extends Extension {
 
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        this._statusItem = new PopupMenu.PopupMenuItem('', {
-            reactive: false,
-            can_focus: false,
-        });
-        this._statusItem.label.add_style_class_name('claude-usage-status');
-        menu.addMenuItem(this._statusItem);
-
-        this._refreshItem = new PopupMenu.PopupMenuItem('Refresh now');
-        this._refreshItem.connect('activate', () => this._refresh(true));
-        menu.addMenuItem(this._refreshItem);
+        this._footer = new Footer(() => this._refresh(true));
+        menu.addMenuItem(this._footer);
 
         menu.connect('open-state-changed', (_menu, isOpen) => {
             if (isOpen)
@@ -463,27 +493,13 @@ export default class ClaudeCodeUsageExtension extends Extension {
         if (this._state === 'signed-out') {
             this._sessionItem.setData(null);
             this._weeklyItem.setData(null);
-            this._statusItem.label.text =
-                'Not signed in — run `claude` to authenticate';
+            this._footer.setUpdated(null);
             return;
         }
 
         this._sessionItem.setData(this._data?.session ?? null);
         this._weeklyItem.setData(this._data?.weekly ?? null);
-
-        if (this._error && this._stale && this._lastUpdated) {
-            this._statusItem.label.text = this._errorKind === 'rate'
-                ? `Anthropic usage API rate limited · showing values from ${formatClock(this._lastUpdated)}`
-                : `⚠ ${this._error} · showing values from ${formatClock(this._lastUpdated)}`;
-        } else if (this._error) {
-            this._statusItem.label.text = this._errorKind === 'rate'
-                ? 'Anthropic usage API rate limited (not your quota)'
-                : `⚠ ${this._error}`;
-        } else if (this._lastUpdated) {
-            this._statusItem.label.text = `Updated ${formatClock(this._lastUpdated)}`;
-        } else {
-            this._statusItem.label.text = 'Loading…';
-        }
+        this._footer.setUpdated(this._lastUpdated);
     }
 
     // -- Data ---------------------------------------------------------------
@@ -525,8 +541,6 @@ export default class ClaudeCodeUsageExtension extends Extension {
 
             this._data = this._parseUsage(usage);
             this._lastUpdated = new Date();
-            this._error = null;
-            this._errorKind = null;
             this._state = 'ok';
             this._stale = false;
             this._backoffMs = 0;
@@ -543,18 +557,12 @@ export default class ClaudeCodeUsageExtension extends Extension {
             }
 
             // Keep showing the last known values on transient failures.
-            this._errorKind = error.kind ?? null;
-
             if (error.kind === 'rate') {
                 this._backoffMs = this._backoffMs
                     ? Math.min(this._backoffMs * 2, RATE_LIMIT_BACKOFF_MAX_MS)
                     : RATE_LIMIT_BACKOFF_MS;
                 this._notBefore = Date.now() + this._backoffMs;
             }
-
-            this._error = error.kind === 'rate'
-                ? 'usage API rate limited'
-                : 'could not reach Anthropic';
 
             if (this._data)
                 this._stale = true;
@@ -570,8 +578,6 @@ export default class ClaudeCodeUsageExtension extends Extension {
         if (this._destroyed)
             return;
         this._data = null;
-        this._error = null;
-        this._errorKind = null;
         this._stale = false;
         this._lastUpdated = null;
         this._state = 'signed-out';

@@ -48,6 +48,19 @@
     opacity: 0.6;
 }
 
+.claude-usage-footer {
+    spacing: 6px;
+}
+
+.claude-usage-refresh {
+    padding: 3px;
+    border-radius: 4px;
+}
+
+.claude-usage-refresh:hover {
+    background-color: rgba(127, 127, 127, 0.25);
+}
+
 .claude-usage-row {
     spacing: 2px;
 }
