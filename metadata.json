@@ -1,0 +1,9 @@
+{
+  "uuid": "claude-code-usage@rishabh",
+  "name": "Claude Code Usage",
+  "description": "Shows Claude Code rate limit usage (5-hour session and weekly) in the top panel. Reads the credentials of your locally authenticated Claude Code and refreshes them when needed.",
+  "shell-version": ["45", "46", "47"],
+  "url": "https://github.com/pyaf/gnome-claude-code-extension",
+  "version": 1,
+  "gettext-domain": "claude-code-usage@rishabh"
+}

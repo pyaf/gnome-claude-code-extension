@@ -1,0 +1,57 @@
+/* Claude Code Usage — GNOME Shell extension */
+
+.claude-usage-box {
+    spacing: 4px;
+}
+
+.claude-usage-icon {
+    -st-icon-style: regular;
+}
+
+.claude-usage-label {
+    font-feature-settings: "tnum";
+    font-size: 0.85em;
+}
+
+.claude-usage-muted {
+    opacity: 0.6;
+}
+
+.claude-usage-label.claude-usage-warn {
+    color: #f5c211;
+}
+
+.claude-usage-label.claude-usage-critical {
+    color: #e01b24;
+}
+
+.claude-usage-header {
+    font-weight: 700;
+}
+
+.claude-usage-title {
+    opacity: 0.8;
+}
+
+.claude-usage-value {
+    font-feature-settings: "tnum";
+    font-weight: 700;
+}
+
+.claude-usage-reset {
+    font-size: 0.85em;
+    opacity: 0.6;
+}
+
+.claude-usage-status {
+    font-size: 0.85em;
+    opacity: 0.6;
+}
+
+.claude-usage-row {
+    spacing: 2px;
+}
+
+.claude-usage-bar {
+    margin: 4px 0 2px 0;
+}
