@@ -125,6 +125,13 @@ function formatClock(date) {
     return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatShortDate(date) {
+    return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+}
+
 function clampPercent(value) {
     return Math.min(100, Math.max(0, value));
 }
@@ -262,8 +269,13 @@ class UsageRow extends PopupMenu.PopupBaseMenuItem {
         this._bar.setUsage(data.used, data.level);
 
         if (data.resetAt) {
-            const resetTime = new Date(data.resetAt).getTime();
-            this._reset.text = `resets in ${formatDuration(resetTime - Date.now())}`;
+            const resetDate = new Date(data.resetAt);
+            const delta = resetDate.getTime() - Date.now();
+            let when = formatClock(resetDate);
+            // Distant resets get a date; the 5-hour session stays time-only.
+            if (delta > 24 * 60 * 60 * 1000)
+                when = `${formatShortDate(resetDate)}, ${when}`;
+            this._reset.text = `resets in ${formatDuration(delta)} · ${when}`;
         } else {
             this._reset.text = '';
         }
