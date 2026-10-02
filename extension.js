@@ -31,9 +31,6 @@ const EXPIRY_BUFFER_MS = 5 * 60 * 1000;
 // cannot hammer the usage endpoint (which rate-limits aggressively).
 const AUTO_REFRESH_MIN_MS = 60 * 1000;
 
-// Even a forced fetch waits this long, so spam-clicking Refresh does nothing.
-const FORCE_MIN_MS = 15 * 1000;
-
 // Backoff applied after the usage endpoint returns 429. Anthropic's usage API
 // rate-limits easily and can stay limited for a long time, so back off
 // exponentially instead of retrying on every poll.
@@ -320,6 +317,10 @@ class Footer extends PopupMenu.PopupBaseMenuItem {
     setUpdated(date) {
         this._label.text = date ? `Updated ${formatClock(date)}` : 'Updated —';
     }
+
+    setRefreshing() {
+        this._label.text = 'Refreshing…';
+    }
 });
 
 // ---------------------------------------------------------------------------
@@ -423,7 +424,10 @@ export default class ClaudeCodeUsageExtension extends Extension {
 
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        this._footer = new Footer(() => this._refresh(true));
+        this._footer = new Footer(() => {
+            this._footer.setRefreshing();
+            this._refresh(true);
+        });
         menu.addMenuItem(this._footer);
 
         menu.connect('open-state-changed', (_menu, isOpen) => {
@@ -508,8 +512,8 @@ export default class ClaudeCodeUsageExtension extends Extension {
         if (this._refreshing || this._destroyed)
             return;
 
-        const minGap = force ? FORCE_MIN_MS : AUTO_REFRESH_MIN_MS;
-        if (this._lastAttempt && Date.now() - this._lastAttempt < minGap)
+        if (!force && this._lastAttempt &&
+            Date.now() - this._lastAttempt < AUTO_REFRESH_MIN_MS)
             return;
         if (!force && Date.now() < this._notBefore)
             return;
